@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#080d16">
+  <meta name="description" content="World Knowledge: notizie, scoperte e conoscenza in un feed personale da esplorare ogni giorno.">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <title>World Knowledge — Discover</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <a class="brand" href="#" data-page-link="feed">
+      <span class="brand-mark">W</span>
+      <span><b>WORLD KNOWLEDGE</b><small>SCROLL TO DISCOVER</small></span>
+    </a>
+    <div class="side-label">Il tuo spazio</div>
+    <nav class="nav">
+      <button class="nav-item active" data-page="feed"><span>▣</span> Per te</button>
+      <button class="nav-item" data-page="latest"><span>◉</span> Ultime notizie</button>
+      <button class="nav-item" data-page="explore"><span>◈</span> Esplora argomenti</button>
+      <button class="nav-item" data-page="learn"><span>✦</span> Impara ogni giorno</button>
+      <button class="nav-item" data-page="saved"><span>♡</span> I miei salvati</button>
+      <button class="nav-item" data-page="settings"><span>⚙</span> I miei interessi</button>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="mini-orbit">✧</div>
+      <b>Conoscere. Capire. Crescere.</b>
+      <small>Il tuo giornale personale del futuro.</small>
+    </div>
+  </aside>
+
+  <main class="main-area">
+    <header class="topbar">
+      <div class="heading">
+        <div class="eyebrow">YOUR KNOWLEDGE FEED</div>
+        <h1 id="page-title">Scopri qualcosa di nuovo.</h1>
+        <p id="page-subtitle">Notizie e idee selezionate per alimentare la tua curiosità.</p>
+      </div>
+      <div class="top-actions">
+        <div class="connection" id="connection"><i></i><span>Collegamento in corso</span></div>
+        <button class="icon-button" id="refresh-btn" title="Aggiorna feed" aria-label="Aggiorna feed">↻</button>
+        <button class="install-button" id="install-btn" hidden>Installa app</button>
+        <div class="profile">W</div>
+      </div>
+    </header>
+
+    <section class="page active" id="page-feed">
+      <div class="feed-header">
+        <div class="chip-row" id="feed-categories">
+          <button class="chip active" data-category="all">Per te</button>
+          <button class="chip" data-category="mondo">Mondo</button>
+          <button class="chip" data-category="tecnologia">Tecnologia</button>
+          <button class="chip" data-category="scienza">Scienza</button>
+          <button class="chip" data-category="economia">Economia</button>
+          <button class="chip" data-category="spazio">Spazio</button>
+        </div>
+        <span class="updated-label" id="feed-updated">In attesa del primo aggiornamento…</span>
+      </div>
+      <div class="reel-feed" id="reel-feed" aria-live="polite">
+        <div class="loading-state"><div class="loader"></div><b>Sto preparando il tuo feed</b><span>Raccolgo le ultime pubblicazioni dalle fonti collegate.</span></div>
+      </div>
+    </section>
+
+    <section class="page" id="page-latest">
+      <div class="section-intro"><div><div class="eyebrow">AGGIORNAMENTI</div><h2>Le notizie più recenti</h2><p>Un flusso cronologico, con fonte e data sempre visibili.</p></div></div>
+      <div class="story-list" id="latest-list"></div>
+    </section>
+
+    <section class="page" id="page-explore">
+      <div class="section-intro"><div><div class="eyebrow">SEGUI LA CURIOSITÀ</div><h2>Esplora il mondo</h2><p>Entra in un argomento e lascia che il feed si adatti ai tuoi interessi.</p></div></div>
+      <div class="topic-grid" id="topic-grid"></div>
+    </section>
+
+    <section class="page" id="page-learn">
+      <div class="section-intro"><div><div class="eyebrow">UN PICCOLO PASSO OGNI GIORNO</div><h2>Impara ogni giorno</h2><p>Una conoscenza alla volta. Spiegazioni brevi, senza fretta.</p></div></div>
+      <article class="learning-feature">
+        <div class="learning-art"><span>✦</span><small>MICRO-LEZIONE</small></div>
+        <div class="learning-copy">
+          <div class="eyebrow">IL CONCETTO DI OGGI · ECONOMIA</div>
+          <h2>Il costo opportunità: ogni scelta ha un'alternativa.</h2>
+          <p>Quando scegli come usare il tuo tempo o le tue risorse, rinunci sempre a qualcos'altro. In economia, il costo opportunità è il valore della migliore alternativa a cui rinunci.</p>
+          <p class="example"><b>Un esempio:</b> se dedichi due ore a guardare un film invece di studiare una lingua, il costo opportunità è il valore che avresti attribuito a quelle due ore di studio.</p>
+          <div class="quiz">
+            <b>Metti alla prova quello che hai imparato</b>
+            <p>Hai un pomeriggio libero e scegli di lavorare a un progetto personale. Qual è il costo opportunità?</p>
+            <div class="quiz-options">
+              <button data-answer="wrong">Il costo del computer</button>
+              <button data-answer="correct">Il valore della migliore attività alternativa a cui rinunci</button>
+              <button data-answer="wrong">Il numero di ore del pomeriggio</button>
+            </div>
+            <div class="quiz-result" id="quiz-result" role="status"></div>
+          </div>
+        </div>
+      </article>
+      <div class="section-heading"><h3>Continua a imparare</h3><span>Contenuti dal feed</span></div>
+      <div class="story-grid" id="learn-list"></div>
+    </section>
+
+    <section class="page" id="page-saved">
+      <div class="section-intro"><div><div class="eyebrow">LA TUA LIBRERIA</div><h2>Le cose da ricordare</h2><p>Ritrova qui le notizie e le idee che hai salvato.</p></div></div>
+      <div class="story-grid" id="saved-list"></div>
+    </section>
+
+    <section class="page" id="page-settings">
+      <div class="section-intro"><div><div class="eyebrow">PERSONALIZZAZIONE</div><h2>Il tuo mondo, i tuoi interessi</h2><p>Seleziona gli argomenti che vuoi vedere più spesso nel feed Per te.</p></div></div>
+      <div class="settings-panel">
+        <div class="settings-top"><b>I tuoi argomenti</b><span id="selected-count">0 selezionati</span></div>
+        <div class="settings-grid" id="settings-grid"></div>
+        <button class="primary-button" id="save-preferences">Salva preferenze</button>
+        <p class="settings-note">Audio: la lettura usa le voci disponibili sul dispositivo e sceglie una voce in base all’argomento. I video compatibili partono senza audio quando entrano nel feed. In questa versione preferenze e contenuti salvati restano su questo dispositivo. La sincronizzazione tra telefono e computer verrà attivata collegando un archivio personale online.</p>
+      </div>
+    </section>
+
+    <footer class="footer-note">
+      <span>WORLD KNOWLEDGE</span>
+      <span>Le schede mostrano anteprime RSS e rimandano sempre alla fonte originale. Le fonti possono aggiornarsi con frequenze diverse.</span>
+    </footer>
+  </main>
+
+  <aside class="rightbar">
+    <div class="right-section">
+      <div class="right-heading"><div><div class="eyebrow">IL TUO PROFILO</div><h3>Il tuo universo</h3></div><span class="sparkle">✧</span></div>
+      <div class="interest-summary" id="interest-summary"></div>
+    </div>
+    <div class="right-section">
+      <div class="right-heading"><div><div class="eyebrow">APPENA ARRIVATE</div><h3>Nuove nel feed</h3></div><button class="plain-link" data-open-page="latest">Vedi tutte</button></div>
+      <div class="side-news" id="side-news"><div class="side-empty">Le nuove pubblicazioni appariranno qui.</div></div>
+    </div>
+    <div class="right-section daily-note">
+      <div class="eyebrow">UNA COSA DA SAPERE</div>
+      <h3>La luce delle stelle è una cartolina del passato.</h3>
+      <p>La luce viaggia a velocità finita: osservare oggetti lontani significa vederli com'erano quando quella luce è partita.</p>
+    </div>
+    <div class="source-status">
+      <div class="eyebrow">FONTI COLLEGATE</div>
+      <div id="source-status">Verifica delle fonti in corso…</div>
+    </div>
+  </aside>
+</main>
+
+<nav class="mobile-nav">
+  <button class="active" data-page="feed"><i>▣</i><span>Per te</span></button>
+  <button data-page="latest"><i>◉</i><span>Notizie</span></button>
+  <button data-page="explore"><i>◈</i><span>Esplora</span></button>
+  <button data-page="learn"><i>✦</i><span>Impara</span></button>
+  <button data-page="saved"><i>♡</i><span>Salvati</span></button>
+</nav>
+</div>
+
+<dialog id="article-dialog" class="article-dialog">
+  <form method="dialog"><button class="dialog-close" aria-label="Chiudi">✕</button></form>
+  <div class="eyebrow" id="dialog-category">APPROFONDIMENTO</div>
+  <h2 id="dialog-title"></h2>
+  <div class="dialog-meta" id="dialog-meta"></div>
+  <p id="dialog-description"></p>
+  <div class="dialog-media-actions"><button class="secondary-button" id="dialog-listen" type="button">▶ Ascolta la spiegazione</button><button class="secondary-button" id="dialog-stop-audio" type="button">■ Ferma audio</button></div>
+  <p class="dialog-disclaimer">Questa è un'anteprima basata sul riepilogo fornito dalla fonte. Per leggere il contenuto completo e verificarne il contesto, apri l'articolo originale.</p>
+  <a class="primary-button source-button" id="dialog-source" href="#" target="_blank" rel="noopener noreferrer">Leggi la fonte originale ↗</a>
+</dialog>
+<script src="/app.js" defer></script>
+</body>
+</html>
