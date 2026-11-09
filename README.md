@@ -88,3 +88,27 @@ I feed vengono mostrati come anteprime attribuite, con link all'articolo origina
 - `GET /api/health` — stato server e fonti.
 - `GET /api/sources` — elenco fonti configurate.
 - `GET /api/feed?category=all&limit=60` — contenuti aggregati.
+
+## Aggiornamento multimedia e argomenti
+
+La versione aggiornata aggiunge argomenti editoriali (politica, salute, ambiente, cultura, istruzione, sport, viaggi e altri) e feed video RSS di canali YouTube educativi. I video YouTube vengono incorporati tramite il player privacy-enhanced `youtube-nocookie.com` e caricati solo quando la scheda entra nell'area visibile; l'avvio è silenzioso e i controlli del player consentono all'utente di attivare l'audio. La disponibilità dei video dipende dagli aggiornamenti dei canali e dalle restrizioni di incorporamento impostate dagli autori.
+
+## Aggiornamento interfaccia mobile e traduzione
+
+- Su smartphone il feed usa una scheda più immersiva a tutta altezza; il selettore degli argomenti è separato dal contenuto per lasciare più spazio alla notizia.
+- Il selettore mostra tutti gli argomenti e permette di filtrare il feed senza occupare stabilmente la parte superiore dello schermo.
+- Nel pannello di approfondimento è disponibile un collegamento a Google Traduttore per tradurre in italiano titolo e riepilogo dell'articolo. La traduzione automatica integrata direttamente nel feed richiede un servizio di traduzione dedicato e non è inclusa in questa versione gratuita.
+- La cache della PWA è stata aggiornata per caricare la nuova interfaccia.
+
+
+## Traduzione italiana (versione gratuita)
+
+La lingua predefinita è l'italiano. Le schede visibili richiedono al server una traduzione del titolo e dell'estratto RSS, con pulsante **Leggi originale / Mostra italiano**. La fonte originale resta sempre accessibile.
+
+Il server usa il servizio pubblico MyMemory (senza chiave API) e una cache temporanea in memoria. La quota giornaliera è deliberatamente prudente e condivisa tra i visitatori. Quando la quota è esaurita o il servizio non risponde, il testo originale resta visibile con un'indicazione esplicita; non viene mai presentato come tradotto. I testi delle fonti pubbliche vengono inviati a MyMemory, un servizio di terze parti. Non è garantita la qualità delle traduzioni automatiche.
+
+La traduzione è limitata a titoli ed estratti RSS: non traduce l'intero articolo esterno. Le traduzioni sono volatili su Render Free e potrebbero richiedere una nuova chiamata dopo il riavvio del servizio.
+
+
+## Sezione Anime
+La navigazione include una sezione dedicata ad anime, manga e cultura pop giapponese. Le notizie vengono raccolte dal feed RSS di Anime News Network (`https://www.animenewsnetwork.com/news/rss.xml?ann-edition=us`), classificate nella categoria `anime` e mostrate nella pagina dedicata. I contenuti restano attribuiti alla fonte e il link originale è conservato. Le traduzioni in italiano dipendono dal servizio gratuito configurato e dai suoi limiti di disponibilità.

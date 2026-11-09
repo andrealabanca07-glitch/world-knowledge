@@ -24,12 +24,27 @@ const FEEDS = [
   { name: "BBC News — Technology", category: "tecnologia", url: "https://feeds.bbci.co.uk/news/technology/rss.xml" },
   { name: "BBC News — Business", category: "economia", url: "https://feeds.bbci.co.uk/news/business/rss.xml" },
   { name: "BBC News — Science & Environment", category: "scienza", url: "https://feeds.bbci.co.uk/news/science_and_environment/rss.xml" },
+  { name: "BBC News — Health", category: "salute", url: "https://feeds.bbci.co.uk/news/health/rss.xml" },
+  { name: "BBC News — Politics", category: "politica", url: "https://feeds.bbci.co.uk/news/politics/rss.xml" },
+  { name: "BBC News — Arts & Culture", category: "cultura", url: "https://feeds.bbci.co.uk/news/entertainment_and_arts/rss.xml" },
+  { name: "BBC Sport", category: "sport", url: "https://feeds.bbci.co.uk/sport/rss.xml" },
   { name: "The Guardian — World", category: "mondo", url: "https://www.theguardian.com/world/rss" },
   { name: "The Guardian — Technology", category: "tecnologia", url: "https://www.theguardian.com/uk/technology/rss" },
   { name: "The Guardian — Science", category: "scienza", url: "https://www.theguardian.com/science/rss" },
   { name: "The Guardian — Business", category: "economia", url: "https://www.theguardian.com/uk/business/rss" },
+  { name: "The Guardian — Environment", category: "ambiente", url: "https://www.theguardian.com/environment/rss" },
+  { name: "The Guardian — Politics", category: "politica", url: "https://www.theguardian.com/politics/rss" },
+  { name: "The Guardian — Culture", category: "cultura", url: "https://www.theguardian.com/culture/rss" },
+  { name: "The Guardian — Travel", category: "viaggi", url: "https://www.theguardian.com/travel/rss" },
   { name: "NASA", category: "spazio", url: "https://www.nasa.gov/feed/" },
-  { name: "Nature", category: "scienza", url: "https://www.nature.com/nature.rss" }
+  { name: "Nature", category: "scienza", url: "https://www.nature.com/nature.rss" },
+  // Notizie su anime, manga e cultura pop giapponese. Le anteprime rimandano sempre alla fonte.
+  { name: "Anime News Network", category: "anime", url: "https://www.animenewsnetwork.com/news/rss.xml?ann-edition=us" },
+  // Canali YouTube ufficiali/educativi: vengono incorporati, non copiati o ricaricati.
+  { name: "NASA — Video", category: "spazio", video: true, url: "https://www.youtube.com/feeds/videos.xml?channel_id=UCLA_DiR1FfKNvjuUpBHmylQ" },
+  { name: "TED-Ed — Video", category: "istruzione", video: true, url: "https://www.youtube.com/feeds/videos.xml?channel_id=UCsooa4yRKGN_zEE8iknghZA" },
+  { name: "Veritasium — Video", category: "scienza", video: true, url: "https://www.youtube.com/feeds/videos.xml?channel_id=UCHnyfMqiRRG1u-2MsorkiGc" },
+  { name: "Kurzgesagt — Video", category: "scienza", video: true, url: "https://www.youtube.com/feeds/videos.xml?channel_id=UCsXVk37bltHxD1rDPwtNM8Q" }
 ];
 
 const cache = { items: [], updatedAt: 0, errors: [], lastAttempt: 0 };
@@ -56,6 +71,19 @@ function safeUrl(value) {
   } catch {
     return null;
   }
+}
+
+function youtubeIdFromUrl(value) {
+  try {
+    const url = new URL(value);
+    if (url.hostname.endsWith("youtu.be")) return url.pathname.slice(1).split("/")[0] || null;
+    if (url.hostname.includes("youtube.com")) {
+      if (url.pathname === "/watch") return url.searchParams.get("v");
+      const match = url.pathname.match(/^\/(?:embed|shorts)\/([^/?]+)/);
+      return match?.[1] || null;
+    }
+  } catch {}
+  return null;
 }
 
 function findImage(item) {
@@ -129,13 +157,15 @@ async function readFeed(feed) {
     const dateRaw = item.isoDate || item.pubDate || item.date || null;
     const timestamp = dateRaw ? Date.parse(dateRaw) : NaN;
 
+    const youtubeId = feed.video ? youtubeIdFromUrl(url) : null;
     return {
       id: stableId(url, title),
       title,
       description,
       url,
-      image: findImage(item),
+      image: findImage(item) || (youtubeId ? `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg` : null),
       videoUrl: findVideo(item),
+      youtubeId,
       source: feed.name,
       category: feed.category,
       publishedAt: Number.isFinite(timestamp) ? new Date(timestamp).toISOString() : null
@@ -200,6 +230,49 @@ app.get("/api/health", async (_req, res) => {
 
 app.get("/api/sources", (_req, res) => {
   res.json(FEEDS.map(({ name, category, url }) => ({ name, category, url })));
+});
+
+// Traduzioni su richiesta: servizio esterno gratuito con limiti, cache volatile.
+// Non inviare testi personali: traduciamo solo titoli/estratti RSS pubblici.
+const translationCache = new Map();
+let dailyTranslations = { day: "", characters: 0 };
+const TRANSLATION_DAILY_LIMIT = 4200; // margine prudente sotto le quote pubbliche
+async function translateToItalian(text) {
+  const clean = String(text || "").trim().slice(0, 650);
+  if (!clean) return "";
+  const key = clean;
+  if (translationCache.has(key)) return translationCache.get(key);
+  const today = new Date().toISOString().slice(0, 10);
+  if (dailyTranslations.day !== today) dailyTranslations = { day: today, characters: 0 };
+  if (dailyTranslations.characters + clean.length > TRANSLATION_DAILY_LIMIT) throw new Error("quota");
+  dailyTranslations.characters += clean.length;
+  const endpoint = new URL("https://api.mymemory.translated.net/get");
+  endpoint.searchParams.set("q", clean);
+  endpoint.searchParams.set("langpair", "en|it");
+  const response = await fetch(endpoint, { signal: AbortSignal.timeout(7000) });
+  if (!response.ok) throw new Error("provider");
+  const result = await response.json();
+  const translated = String(result.responseData?.translatedText || "").trim();
+  if (Number(result.responseStatus) !== 200 || !translated || /MYMEMORY WARNING/i.test(translated)) throw new Error("provider");
+  translationCache.set(key, translated);
+  if (translationCache.size > 500) translationCache.delete(translationCache.keys().next().value);
+  return translated;
+}
+
+app.get("/api/translate/:id", async (req, res) => {
+  res.set("Cache-Control", "no-store");
+  await refreshFeeds();
+  const item = cache.items.find(entry => entry.id === req.params.id);
+  if (!item) return res.status(404).json({ available: false, reason: "not_found" });
+  try {
+    const [title, description] = await Promise.all([
+      translateToItalian(item.title),
+      translateToItalian(item.description || "")
+    ]);
+    res.json({ available: true, title, description, originalTitle: item.title, originalDescription: item.description });
+  } catch (error) {
+    res.json({ available: false, reason: error.message === "quota" ? "quota" : "service_unavailable" });
+  }
 });
 
 app.get("/api/feed", async (req, res) => {
