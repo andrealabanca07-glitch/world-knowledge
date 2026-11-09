@@ -22,6 +22,7 @@
     <nav class="nav">
       <button class="nav-item active" data-page="feed"><span>▣</span> Per te</button>
       <button class="nav-item" data-page="latest"><span>◉</span> Ultime notizie</button>
+      <button class="nav-item" data-page="anime"><span>🎌</span> Anime</button>
       <button class="nav-item" data-page="explore"><span>◈</span> Esplora argomenti</button>
       <button class="nav-item" data-page="learn"><span>✦</span> Impara ogni giorno</button>
       <button class="nav-item" data-page="saved"><span>♡</span> I miei salvati</button>
@@ -59,6 +60,7 @@
           <button class="chip" data-category="economia">Economia</button>
           <button class="chip" data-category="spazio">Spazio</button>
         </div>
+        <button class="topic-picker-button" id="open-topic-picker" type="button">☷ <span id="active-topic-label">Scegli argomento</span></button>
         <span class="updated-label" id="feed-updated">In attesa del primo aggiornamento…</span>
       </div>
       <div class="reel-feed" id="reel-feed" aria-live="polite">
@@ -69,6 +71,16 @@
     <section class="page" id="page-latest">
       <div class="section-intro"><div><div class="eyebrow">AGGIORNAMENTI</div><h2>Le notizie più recenti</h2><p>Un flusso cronologico, con fonte e data sempre visibili.</p></div></div>
       <div class="story-list" id="latest-list"></div>
+    </section>
+
+    <section class="page" id="page-anime">
+      <div class="section-intro"><div><div class="eyebrow">ANIME & CULTURA GIAPPONESE</div><h2>Il mondo degli anime</h2><p>Novità, annunci, adattamenti, trailer e notizie dal mondo anime e manga. Le anteprime sono in italiano quando la traduzione è disponibile; la fonte originale resta sempre accessibile.</p></div></div>
+      <div class="anime-feature">
+        <div class="anime-feature-mark">🎌</div>
+        <div><div class="eyebrow">ANIME · MANGA · JAPAN POP CULTURE</div><h3>Una finestra sull'animazione giapponese</h3><p>Segui annunci di nuove serie, stagioni, film, manga, studi di animazione e curiosità sulla cultura pop giapponese.</p><span class="anime-source-note">Fonte informativa: Anime News Network · contenuti e diritti restano ai rispettivi editori.</span></div>
+      </div>
+      <div class="section-heading"><h3>Ultime dal mondo anime</h3><span>Notizie e aggiornamenti</span></div>
+      <div class="story-grid" id="anime-list"></div>
     </section>
 
     <section class="page" id="page-explore">
@@ -146,6 +158,7 @@
 <nav class="mobile-nav">
   <button class="active" data-page="feed"><i>▣</i><span>Per te</span></button>
   <button data-page="latest"><i>◉</i><span>Notizie</span></button>
+  <button data-page="anime"><i>🎌</i><span>Anime</span></button>
   <button data-page="explore"><i>◈</i><span>Esplora</span></button>
   <button data-page="learn"><i>✦</i><span>Impara</span></button>
   <button data-page="saved"><i>♡</i><span>Salvati</span></button>
@@ -160,7 +173,16 @@
   <p id="dialog-description"></p>
   <div class="dialog-media-actions"><button class="secondary-button" id="dialog-listen" type="button">▶ Ascolta la spiegazione</button><button class="secondary-button" id="dialog-stop-audio" type="button">■ Ferma audio</button></div>
   <p class="dialog-disclaimer">Questa è un'anteprima basata sul riepilogo fornito dalla fonte. Per leggere il contenuto completo e verificarne il contesto, apri l'articolo originale.</p>
-  <a class="primary-button source-button" id="dialog-source" href="#" target="_blank" rel="noopener noreferrer">Leggi la fonte originale ↗</a>
+  <div class="dialog-footer-actions">
+    <span id="dialog-language-status" class="translation-status">Traduzione in italiano in preparazione</span>
+    <button class="secondary-button" id="dialog-toggle-language" type="button" hidden>Leggi originale</button>
+    <a class="secondary-button" id="dialog-translate" href="#" target="_blank" rel="noopener noreferrer">Traduci in italiano ↗</a>
+    <a class="primary-button source-button" id="dialog-source" href="#" target="_blank" rel="noopener noreferrer">Leggi la fonte originale ↗</a>
+  </div>
+</dialog>
+<dialog id="topic-dialog" class="topic-dialog">
+  <div class="topic-dialog-head"><div><div class="eyebrow">PERSONALIZZA IL FEED</div><h2>Scegli cosa vuoi scoprire</h2><p>Seleziona un argomento per filtrare le schede.</p></div><button class="dialog-close" id="close-topic-picker" aria-label="Chiudi">✕</button></div>
+  <div class="topic-picker-grid" id="topic-picker-grid"></div>
 </dialog>
 <script src="/app.js" defer></script>
 </body>

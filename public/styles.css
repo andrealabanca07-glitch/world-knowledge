@@ -7,3 +7,61 @@
 
 /* Esperienza multimediale: video verticali, autoplay silenzioso e comandi accessibili. */
 .reel-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#080d16;z-index:-1}.media-kind{position:absolute;top:65px;left:23px;padding:6px 9px;border-radius:99px;background:#07111dbb;border:1px solid #ffffff38;color:#d8e8f7;font-size:8px;letter-spacing:.12em;backdrop-filter:blur(10px)}.dialog-media-actions{display:flex;gap:8px;flex-wrap:wrap;margin:15px 0}.reel-video::-webkit-media-controls-panel{background:linear-gradient(transparent,#07111dcc)}@media(max-width:720px){.media-kind{top:58px;left:15px}.reel-video{object-fit:cover}}
+/* YouTube embeds: caricati solo quando la scheda entra nel feed visibile. */
+.reel-youtube{position:absolute;inset:0;width:100%;height:100%;border:0;background:#080d16;z-index:-1}
+.chip-row{overflow-x:auto;scrollbar-width:thin;scroll-behavior:smooth}
+
+/* Mobile-first full-screen discovery: topic selection is separate from the story. */
+.topic-picker-button{display:none;border:1px solid #ffffff26;background:#15243a;color:#eaf1fb;border-radius:999px;padding:8px 13px;font-size:11px;font-weight:700;white-space:nowrap}
+.topic-dialog{width:min(680px,calc(100% - 24px));max-height:min(82dvh,760px);overflow:auto;border:1px solid #ffffff28;border-radius:22px;background:#0d1726;color:var(--text);padding:20px;box-shadow:var(--shadow)}
+.topic-dialog::backdrop{background:#02050bdc;backdrop-filter:blur(8px)}
+.topic-dialog-head{display:flex;justify-content:space-between;align-items:flex-start;gap:15px;margin-bottom:18px}
+.topic-dialog-head h2{font:800 23px/1.1 Manrope;margin:7px 0}
+.topic-dialog-head p{font-size:11px;color:var(--muted);margin:0}
+.topic-picker-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.topic-picker-option{min-height:100px;text-align:left;border:1px solid #ffffff18;border-radius:14px;padding:12px;background:#142136;color:#eaf1fb;display:flex;flex-direction:column;align-items:flex-start;gap:5px}
+.topic-picker-option>span{font-size:22px}.topic-picker-option b{font:700 12px Manrope}.topic-picker-option small{font-size:9px;line-height:1.35;color:#9eacc0}.topic-picker-option.selected{border-color:#a9c7ff;background:#eaf1ff;color:#101b2b}.topic-picker-option.selected small{color:#53647b}
+.dialog-footer-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
+@media(max-width:720px){
+  .main-area{padding:0 0 calc(70px + env(safe-area-inset-bottom))}
+  .topbar{height:66px;min-height:66px;padding:9px 13px 7px;gap:8px;background:#070b13f5;position:relative;z-index:2}
+  .heading .eyebrow{font-size:7px;letter-spacing:.15em}
+  .heading h1{font-size:17px;line-height:1.05;margin:2px 0}
+  .heading p{display:none}
+  .top-actions{gap:5px}
+  .connection{padding:6px}.profile{width:28px;height:28px}.icon-button{padding:5px 8px}
+  .feed-header{height:45px;padding:6px 12px;display:flex;align-items:center;justify-content:space-between;margin:0;background:#070b13}
+  .feed-header .chip-row{display:none!important}
+  .topic-picker-button{display:inline-flex;align-items:center;gap:7px}
+  .updated-label{font-size:8px;margin:0;white-space:nowrap}
+  .reel-feed{height:calc(100dvh - 181px - env(safe-area-inset-bottom));min-height:430px;border:0;border-radius:0;box-shadow:none;scrollbar-width:none;background:#080d16}
+  .reel{height:100%;min-height:430px;border:0}
+  .reel-image:after{background:linear-gradient(180deg,#03071155 0%,#03071100 28%,#03071138 49%,#030711f2 100%)}
+  .reel-topline{top:13px;left:14px;right:14px}
+  .reel-copy{left:17px;right:70px;bottom:17px;max-width:none}
+  .source-line{font-size:9px}
+  .reel h2{font-size:clamp(24px,7.2vw,34px);line-height:1.04;margin:8px 0 9px;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+  .reel-copy p{font-size:11px;line-height:1.42;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .reel-meta{font-size:7px;margin-top:8px}
+  .reel-actions{gap:6px;margin-top:10px}
+  .primary-button,.secondary-button{padding:8px 10px;font-size:9px}
+  .reel-rail{right:10px;bottom:22px;gap:4px}
+  .rail-button{width:37px;height:37px;font-size:16px}
+  .rail-caption{font-size:7px;margin-bottom:3px}
+  .media-kind{top:53px;left:14px}
+  .mobile-nav{height:65px;padding:7px 4px calc(6px + env(safe-area-inset-bottom))}
+  .topic-picker-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .topic-picker-option{min-height:84px;padding:10px}
+  .topic-dialog{padding:16px}
+  .topic-dialog-head h2{font-size:20px}
+}
+@media(max-width:380px){.updated-label{display:none}.reel-copy{right:63px}.reel h2{font-size:25px}.rail-button{width:34px;height:34px}}
+
+/* Traduzione e confronto con la lingua originale */
+.language-line { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin:5px 0 8px; font-size:11px; color:#b5e5d5; }
+.translation-status { font-size:11px; color:#b5e5d5; }
+.language-toggle { border:1px solid rgba(255,255,255,.4); background:rgba(8,18,31,.65); color:#fff; border-radius:18px; padding:5px 10px; font-size:11px; cursor:pointer; }
+.language-toggle[hidden] { display:none; }
+
+/* Sezione Anime */
+.anime-feature{display:grid;grid-template-columns:150px minmax(0,1fr);gap:22px;align-items:center;padding:22px;border:1px solid #ffffff1c;border-radius:18px;background:radial-gradient(circle at 12% 50%,#6e4b9b55,transparent 35%),linear-gradient(135deg,#1a2942,#111827);margin-bottom:22px;overflow:hidden}.anime-feature-mark{min-height:132px;border-radius:15px;display:grid;place-items:center;font-size:64px;background:linear-gradient(145deg,#382c5e,#182b48);box-shadow:inset 0 0 35px #c6a6ff18}.anime-feature h3{font:800 21px/1.2 Manrope;margin:7px 0}.anime-feature p{font-size:11px;color:#b5c2d4;line-height:1.65;margin:0 0 9px}.anime-source-note{font-size:9px;color:#8293aa}@media(max-width:720px){.anime-feature{grid-template-columns:76px minmax(0,1fr);gap:13px;padding:14px}.anime-feature-mark{min-height:90px;font-size:42px}.anime-feature h3{font-size:17px}.anime-feature p{font-size:10px}.mobile-nav{justify-content:space-between}.mobile-nav button{min-width:0;flex:1;font-size:7px}.mobile-nav button i{font-size:16px}}
