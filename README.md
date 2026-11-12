@@ -112,3 +112,19 @@ La traduzione è limitata a titoli ed estratti RSS: non traduce l'intero articol
 
 ## Sezione Anime
 La navigazione include una sezione dedicata ad anime, manga e cultura pop giapponese. Le notizie vengono raccolte dal feed RSS di Anime News Network (`https://www.animenewsnetwork.com/news/rss.xml?ann-edition=us`), classificate nella categoria `anime` e mostrate nella pagina dedicata. I contenuti restano attribuiti alla fonte e il link originale è conservato. Le traduzioni in italiano dipendono dal servizio gratuito configurato e dai suoi limiti di disponibilità.
+
+
+## Archivio permanente (consigliato per Render)
+
+World Knowledge può salvare gli articoli in PostgreSQL. Senza `DATABASE_URL` usa solo la memoria del processo: gli articoli raccolti vengono persi quando Render riavvia il servizio.
+
+Per attivare la conservazione:
+1. Crea un progetto PostgreSQL gratuito su Supabase (piano Free, soggetto ai limiti del provider).
+2. Nel pannello Supabase apri **Connect** e copia la stringa di connessione PostgreSQL (usa la connessione indicata come Transaction pooler se il provider la consiglia per applicazioni serverless).
+3. In Render apri il servizio World Knowledge → **Environment** → **Add Environment Variable**.
+4. Aggiungi `DATABASE_URL` come chiave e incolla la stringa PostgreSQL come valore. Non pubblicarla su GitHub e non inviarla in chat.
+5. Salva le modifiche e fai ripartire/deployare il servizio.
+
+Al primo avvio il server crea automaticamente la tabella `articles` e gli indici necessari, quindi ripristina gli articoli già archiviati. Le nuove pubblicazioni vengono aggiunte e deduplicate tramite URL. La paginazione legge l'archivio dal database; il limite di 100 riguarda soltanto una singola risposta API, non il totale dell'archivio.
+
+**Nota sui limiti:** “senza limite artificiale” non significa spazio infinito. Il volume massimo dipende dalla quota gratuita del database e dalle condizioni del provider. Se il database non è configurato o non è raggiungibile, il sito continua in modalità temporanea e l'API segnala `persistentArchive: false`.

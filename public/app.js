@@ -37,11 +37,13 @@ const FALLBACK_IMAGES = {
   arte: "https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=1500",
   viaggi: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1500",
   filosofia: "https://images.unsplash.com/photo-1506880018603-83d5b814b5a6?w=1500",
-  anime: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1500"
 };
 const state = {
   items: [],
   page: "feed",
+  hasMore: false,
+  loadingMore: false,
+  pageSize: 60,
   category: "all",
   saved: loadJson("wk_saved_v1", []),
   preferences: [...new Set([...loadJson("wk_preferences_v1", CATEGORY_ORDER), ...CATEGORY_ORDER])],
@@ -92,7 +94,7 @@ function relativeDate(value) {
   return `${Math.floor(minutes / 1440)} giorni fa`;
 }
 function imageFor(item) {
-  return item.image || FALLBACK_IMAGES[item.category] || FALLBACK_IMAGES.mondo;
+  return item.image || FALLBACK_IMAGES[item.category] || null;
 }
 function visibleItems() {
   let items = [...state.items];
@@ -132,33 +134,47 @@ async function loadFeed(force = false) {
   state.refreshing = true;
   $("#refresh-btn").disabled = true;
   $("#refresh-btn").textContent = "…";
-  if (!state.items.length) {
-    $("#reel-feed").innerHTML = `<div class="loading-state"><div class="loader"></div><b>Sto preparando il tuo feed</b><span>Raccolgo le pubblicazioni dalle fonti collegate.</span></div>`;
-  }
+  if (!state.items.length) $("#reel-feed").innerHTML = `<div class="loading-state"><div class="loader"></div><b>Sto preparando il tuo feed</b><span>Raccolgo le pubblicazioni dalle fonti collegate.</span></div>`;
   try {
-    const response = await fetch(`/api/feed?category=all&limit=100${force ? "&refresh=1" : ""}`, {
-      cache: "no-store"
-    });
+    const response = await fetch(`/api/feed?category=all&limit=${state.pageSize}&offset=0${force ? "&refresh=1" : ""}`, { cache: "no-store" });
     if (!response.ok) throw new Error(`Errore server ${response.status}`);
     const payload = await response.json();
     state.items = Array.isArray(payload.items) ? payload.items : [];
+    state.hasMore = Boolean(payload.hasMore);
     state.lastUpdated = payload.lastUpdated;
     setConnection("ok", `${payload.workingSources}/${payload.sourceCount} fonti attive`);
-    $("#source-status").textContent = `${payload.workingSources} fonti funzionanti su ${payload.sourceCount}. ${payload.errors?.length ? "Alcune fonti non hanno risposto: verranno riprovate al prossimo controllo." : "Nessun errore rilevato nell'ultimo controllo."}`;
-    setUpdatedLabel();
-    renderAll();
+    $("#source-status").textContent = `${payload.workingSources} fonti funzionanti su ${payload.sourceCount}. ${payload.errors?.length ? "Alcune fonti non hanno risposto: verranno riprovate al prossimo controllo." : "Nessun errore rilevato nell'ultimo controllo."} Archivio disponibile: ${payload.total ?? state.items.length} contenuti. ${payload.persistentArchive ? "Archivio permanente attivo." : "Archivio temporaneo: collega DATABASE_URL per conservarlo dopo i riavvii."}`;
+    setUpdatedLabel(); renderAll();
   } catch (error) {
     setConnection("error", "Feed non raggiungibile");
     $("#source-status").textContent = "Il server del feed non risponde. Avvia il progetto con npm start e riprova.";
-    if (!state.items.length) {
-      $("#reel-feed").innerHTML = `<div class="empty-state"><div class="eyebrow">COLLEGAMENTO NON DISPONIBILE</div><b>Il feed ha bisogno del suo motore.</b><span>Apri il progetto tramite il server Node.js (npm install, poi npm start). In questa modalità i contenuti vengono recuperati dalle fonti RSS e aggiornati automaticamente.</span></div>`;
-    }
+    if (!state.items.length) $("#reel-feed").innerHTML = `<div class="empty-state"><div class="eyebrow">COLLEGAMENTO NON DISPONIBILE</div><b>Il feed ha bisogno del suo motore.</b><span>Avvia il progetto tramite Node.js (npm install, poi npm start).</span></div>`;
     console.error("World Knowledge feed:", error);
   } finally {
-    state.refreshing = false;
-    $("#refresh-btn").disabled = false;
-    $("#refresh-btn").textContent = "↻";
+    state.refreshing = false; $("#refresh-btn").disabled = false; $("#refresh-btn").textContent = "↻"; updateLoadMoreButton();
   }
+}
+
+async function loadMore() {
+  if (state.loadingMore || !state.hasMore) return;
+  state.loadingMore = true; updateLoadMoreButton();
+  try {
+    const offset = state.items.length;
+    const response = await fetch(`/api/feed?category=all&limit=${state.pageSize}&offset=${offset}`, { cache: "no-store" });
+    if (!response.ok) throw new Error(`Errore server ${response.status}`);
+    const payload = await response.json();
+    const known = new Set(state.items.map(item => item.id));
+    state.items.push(...(payload.items || []).filter(item => !known.has(item.id)));
+    state.hasMore = Boolean(payload.hasMore); renderAll();
+  } catch (error) { console.error("Caricamento archivio:", error); }
+  finally { state.loadingMore = false; updateLoadMoreButton(); }
+}
+
+function updateLoadMoreButton() {
+  const button = $("#load-more-btn"); if (!button) return;
+  button.hidden = !state.hasMore && !state.loadingMore;
+  button.disabled = state.loadingMore;
+  button.textContent = state.loadingMore ? "Caricamento…" : "Carica altri contenuti";
 }
 
 function renderCategoryChips() {
@@ -273,9 +289,12 @@ function storyCard(item) {
   const view = translatedView(item);
   const title = escapeHtml(view.title);
   const desc = escapeHtml(view.description || "Apri la fonte per leggere tutti i dettagli.");
-  const image = escapeHtml(imageFor(item));
+  const image = imageFor(item);
+  const imageMarkup = image
+    ? `<div class="story-card-image" style="background-image:url('${escapeHtml(image)}')"></div>`
+    : `<div class="story-card-image story-card-placeholder"><span>${category.icon}</span><small>Immagine non fornita dalla fonte</small></div>`;
   return `<article class="story-card">
-    <div class="story-card-image" style="background-image:url('${image}')"></div>
+    ${imageMarkup}
     <div class="story-card-body"><div class="category">${category.icon} ${escapeHtml(category.label)} · ${escapeHtml(item.source)}</div>
       <h3>${title}</h3><p>${desc}</p>
       <div class="story-card-foot"><small>${escapeHtml(relativeDate(item.publishedAt))}</small><span><button class="small-link" data-action="listen" data-id="${escapeHtml(item.id)}">Ascolta · </button><button class="small-link" data-action="details" data-id="${escapeHtml(item.id)}">Apri →</button></span></div>
@@ -530,6 +549,7 @@ $("#feed-categories").addEventListener("click", (event) => {
   $("#reel-feed").scrollTop = 0;
 });
 $("#refresh-btn").addEventListener("click", () => loadFeed(true));
+$("#load-more-btn")?.addEventListener("click", loadMore);
 $("#open-topic-picker").addEventListener("click", () => {
   renderTopicPicker();
   const dialog = $("#topic-dialog");

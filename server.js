@@ -2,12 +2,25 @@ import express from "express";
 import Parser from "rss-parser";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import pg from "pg";
+const { Pool } = pg;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
 const CACHE_TTL_MS = Number(process.env.CACHE_TTL_MS || 8 * 60 * 1000);
+const pool = process.env.DATABASE_URL
+  ? new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.DATABASE_SSL === "false" ? false : { rejectUnauthorized: false },
+      max: 5,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 10000
+    })
+  : null;
+let databaseReady = false;
+
 const parser = new Parser({
   timeout: 12000,
   customFields: {
@@ -40,6 +53,9 @@ const FEEDS = [
   { name: "Nature", category: "scienza", url: "https://www.nature.com/nature.rss" },
   // Notizie su anime, manga e cultura pop giapponese. Le anteprime rimandano sempre alla fonte.
   { name: "Anime News Network", category: "anime", url: "https://www.animenewsnetwork.com/news/rss.xml?ann-edition=us" },
+  { name: "Anime Corner", category: "anime", url: "https://animecorner.me/feed/" },
+  { name: "Manga.Tokyo", category: "anime", url: "https://manga.tokyo/feed/" },
+  { name: "Anime Herald", category: "anime", url: "https://www.animeherald.com/feed/" },
   // Canali YouTube ufficiali/educativi: vengono incorporati, non copiati o ricaricati.
   { name: "NASA — Video", category: "spazio", video: true, url: "https://www.youtube.com/feeds/videos.xml?channel_id=UCLA_DiR1FfKNvjuUpBHmylQ" },
   { name: "TED-Ed — Video", category: "istruzione", video: true, url: "https://www.youtube.com/feeds/videos.xml?channel_id=UCsooa4yRKGN_zEE8iknghZA" },
@@ -196,10 +212,12 @@ async function refreshFeeds(force = false) {
   });
 
   if (collected.length) {
+    // Conserva anche gli articoli già visti durante la vita del processo:
+    // gli aggiornamenti aggiungono/aggiornano, non svuotano l'archivio a ogni refresh.
     const unique = new Map();
-    for (const item of collected) {
+    for (const item of [...cache.items, ...collected]) {
       const key = item.url || item.title.toLowerCase();
-      if (!unique.has(key)) unique.set(key, item);
+      if (!unique.has(key) || (item.image && !unique.get(key).image)) unique.set(key, item);
     }
     cache.items = [...unique.values()].sort((a, b) => {
       const aDate = a.publishedAt ? Date.parse(a.publishedAt) : 0;
@@ -207,8 +225,89 @@ async function refreshFeeds(force = false) {
       return bDate - aDate;
     });
     cache.updatedAt = Date.now();
+    try {
+      await persistArticles(collected);
+    } catch (error) {
+      console.error("Salvataggio archivio permanente:", error.message);
+      console.error("Database non aggiornato; i contenuti restano temporaneamente in memoria.");
+    }
   }
   cache.errors = errors;
+}
+
+async function initializeDatabase() {
+  if (!pool) {
+    console.warn("DATABASE_URL non configurato: archivio temporaneo in memoria.");
+    return;
+  }
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS articles (
+      id TEXT PRIMARY KEY,
+      url TEXT NOT NULL UNIQUE,
+      category TEXT NOT NULL,
+      published_at TIMESTAMPTZ,
+      item JSONB NOT NULL,
+      first_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  await pool.query("CREATE INDEX IF NOT EXISTS articles_category_date_idx ON articles(category, published_at DESC NULLS LAST)");
+  await pool.query("CREATE INDEX IF NOT EXISTS articles_date_idx ON articles(published_at DESC NULLS LAST)");
+  const restored = await pool.query("SELECT item FROM articles ORDER BY published_at DESC NULLS LAST, first_seen_at DESC");
+  cache.items = restored.rows.map(row => row.item);
+  databaseReady = true;
+  console.log(`Archivio permanente collegato: ${cache.items.length} articoli ripristinati.`);
+}
+
+async function persistArticles(items) {
+  if (!pool || !databaseReady || !items.length) return;
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    for (const item of items) {
+      await client.query(
+        `INSERT INTO articles (id, url, category, published_at, item)
+         VALUES ($1, $2, $3, $4, $5::jsonb)
+         ON CONFLICT (url) DO UPDATE SET
+           id = EXCLUDED.id,
+           category = EXCLUDED.category,
+           published_at = COALESCE(EXCLUDED.published_at, articles.published_at),
+           item = CASE
+             WHEN (articles.item->>'image') IS NULL AND (EXCLUDED.item->>'image') IS NOT NULL
+             THEN EXCLUDED.item
+             ELSE articles.item
+           END,
+           updated_at = NOW()`,
+        [item.id, item.url, item.category, item.publishedAt, JSON.stringify(item)]
+      );
+    }
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+async function getArticlePage(category, limit, offset) {
+  if (pool && databaseReady) {
+    const where = category === "all" ? "" : "WHERE category = $1";
+    const params = category === "all" ? [] : [category];
+    const count = await pool.query(`SELECT COUNT(*)::int AS total FROM articles ${where}`, params);
+    const pageParams = [...params, limit, offset];
+    const limitPos = params.length + 1;
+    const offsetPos = params.length + 2;
+    const page = await pool.query(
+      `SELECT item FROM articles ${where}
+       ORDER BY published_at DESC NULLS LAST, first_seen_at DESC
+       LIMIT $${limitPos} OFFSET $${offsetPos}`,
+      pageParams
+    );
+    return { items: page.rows.map(row => row.item), total: count.rows[0].total };
+  }
+  const filtered = category === "all" ? cache.items : cache.items.filter(item => item.category === category);
+  return { items: filtered.slice(offset, offset + limit), total: filtered.length };
 }
 
 app.use(express.static(path.join(__dirname, "public"), {
@@ -222,6 +321,7 @@ app.get("/api/health", async (_req, res) => {
     ok: true,
     lastUpdated: cache.updatedAt ? new Date(cache.updatedAt).toISOString() : null,
     articleCount: cache.items.length,
+    persistentArchive: Boolean(pool && databaseReady),
     configuredSources: FEEDS.length,
     workingSources: FEEDS.length - cache.errors.length,
     failedSources: cache.errors
@@ -279,28 +379,41 @@ app.get("/api/feed", async (req, res) => {
   await refreshFeeds(req.query.refresh === "1");
   const category = String(req.query.category || "all").toLowerCase();
   const limit = Math.max(1, Math.min(100, Number(req.query.limit || 60)));
-  const filtered = category === "all"
-    ? cache.items
-    : cache.items.filter((item) => item.category === category);
-
-  res.set("Cache-Control", "no-store");
-  res.json({
-    items: filtered.slice(0, limit),
-    lastUpdated: cache.updatedAt ? new Date(cache.updatedAt).toISOString() : null,
-    sourceCount: FEEDS.length,
-    workingSources: FEEDS.length - cache.errors.length,
-    errors: cache.errors
-  });
+  const offset = Math.max(0, Number.parseInt(req.query.offset || "0", 10) || 0);
+  try {
+    const page = await getArticlePage(category, limit, offset);
+    res.set("Cache-Control", "no-store");
+    res.json({
+      items: page.items, total: page.total, offset, limit,
+      hasMore: offset + page.items.length < page.total,
+      persistentArchive: Boolean(pool && databaseReady),
+      lastUpdated: cache.updatedAt ? new Date(cache.updatedAt).toISOString() : null,
+      sourceCount: FEEDS.length, workingSources: FEEDS.length - cache.errors.length,
+      errors: cache.errors
+    });
+  } catch (error) {
+    console.error("Lettura archivio:", error);
+    res.status(503).json({ error: "Archivio temporaneamente non disponibile" });
+  }
 });
 
 app.get("*", (_req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-app.listen(PORT, () => {
-  console.log(`World Knowledge attivo su http://localhost:${PORT}`);
-  refreshFeeds(true).catch((error) => console.error("Primo aggiornamento feed:", error));
-  setInterval(() => {
-    refreshFeeds(true).catch((error) => console.error("Aggiornamento feed:", error));
-  }, CACHE_TTL_MS).unref();
-});
+async function start() {
+  try {
+    await initializeDatabase();
+  } catch (error) {
+    console.error("Impossibile collegare il database permanente:", error.message);
+    console.error("Il sito partirà in modalità temporanea. Controlla DATABASE_URL.");
+  }
+  app.listen(PORT, () => {
+    console.log(`World Knowledge attivo su http://localhost:${PORT}`);
+    refreshFeeds(true).catch((error) => console.error("Primo aggiornamento feed:", error));
+    setInterval(() => {
+      refreshFeeds(true).catch((error) => console.error("Aggiornamento feed:", error));
+    }, CACHE_TTL_MS).unref();
+  });
+}
+start();
